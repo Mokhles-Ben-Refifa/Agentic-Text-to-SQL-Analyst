@@ -98,8 +98,8 @@ flowchart TD
 
 | Decision | Choice | Why |
 |---|---|---|
-| Database | **PostgreSQL first**, Athena later | Postgres runs locally in Docker (fast, free). Athena adds cloud credibility but slows iteration and costs money per scan. |
-| Data | **Synthetic insurance warehouse** + **BIRD/Spider subset** | Insurance data mirrors your domain. BIRD gives an external benchmark with gold SQL. |
+| Database | **PostgreSQL & SQLite**, Athena later | BIRD and Spider ship native SQLite databases; BIRD Mini-Dev and production deployments use PostgreSQL. Supporting both gives maximum flexibility. Athena adds cloud credibility. |
+| Data | **BIRD Benchmark + Spider 1.0** (No synthetic data needed) | Real, multi-table databases with verified gold SQL and evidence. Demo on BIRD's `financial` database. |
 | Scope | Read-only analytics questions only | Safety can be fully guaranteed if the agent never writes data. |
 
 ## Step 1: Project setup
@@ -110,7 +110,7 @@ flowchart TD
 
 ```
 text2sql-agent/
-├── data/            # generators, seed scripts
+├── data/            # BIRD/Spider loaders, SQLite/PostgreSQL sync
 ├── semantic/        # table docs, glossary, example queries (YAML)
 ├── mcp_server/      # tools + guardrails
 ├── agent/           # LangGraph graph, nodes, prompts
@@ -120,16 +120,25 @@ text2sql-agent/
 └── docker-compose.yml
 ```
 
-## Step 2: Build the database
+## Step 2: Set up the real databases (BIRD & Spider)
 
-**Use:** PostgreSQL (Docker), `Faker`, `pandas`, SQLAlchemy.
+**Use:** BIRD (Mini-Dev and Dev set), Spider 1.0 Dev set, PostgreSQL (Docker) / SQLite.
 
-**Why:** Faker plus some logic gives realistic data with controlled quirks.
+**Why:** BIRD and Spider ship real, multi-table databases with questions, business evidence, and verified gold SQL. This eliminates synthetic data generation and provides credible external benchmarks.
 
-1. Design 8 to 12 tables: `customers`, `policies`, `claims`, `payments`, `agents`, `products`, `countries`, `claim_events`.
-2. Add real warehouse headaches on purpose: ambiguous column names (`status` in three tables), many-to-many joins, nullable fields, mixed date formats, and a table the agent must never touch (`internal_audit`).
-3. Generate roughly 100k to 500k rows so queries behave realistically.
-4. Create **two database roles**: `admin` (for seeding) and `readonly_agent` (SELECT only on an allowlist, with `statement_timeout` set). This is your first and strongest safety layer, since it holds even if every software check fails.
+| Role | Dataset | Why |
+|---|---|---|
+| Main database & benchmark | **BIRD** (Mini-Dev for fast runs, Dev set for full evaluation) | Real, messy, multi-table schemas with questions, gold SQL, and domain evidence. Mini-Dev includes a PostgreSQL version. |
+| Warm-up & debugging | **Spider 1.0 dev set** | Clean, well-structured schemas ideal for pipeline verification and initial testing. |
+| Live demo database | **BIRD `financial` database** | Banking/finance domain (accounts, loans, transactions, cards, clients). Perfect match for business analyst queries without writing mock data. |
+| Athena extension (optional) | **NYC Taxi Parquet (AWS Open Data)** | Free, partitioned Parquet in S3 for zero-setup cloud warehouse demos. |
+
+### Database Roles & Security Boundary:
+1. Support both **SQLite** (native to BIRD/Spider) and **PostgreSQL** (via BIRD Mini-Dev Postgres dump or SQLite-to-Postgres loader).
+2. For PostgreSQL, enforce **two roles**:
+   - `admin`: For loading schemas and tables.
+   - `readonly_agent`: SELECT only on allowlisted tables, `statement_timeout` set, read-only transaction defaults.
+3. Include an intentionally forbidden table (`internal_audit`) to verify hard database-level permission boundaries.
 
 ## Step 3: Build the semantic layer (the most underrated step)
 
@@ -188,12 +197,13 @@ from sqlglot import exp
 
 ALLOWED_TABLES = {"customers", "policies", "claims", "payments"}
 
+
 def check_sql(sql: str, dialect="postgres") -> str:
     statements = sqlglot.parse(sql, dialect=dialect)
     if len(statements) != 1:
         raise ValueError("Only one statement allowed")
     tree = statements[0]
-    if not isinstance(tree, exp.Select):          # SELECT / WITH...SELECT only
+    if not isinstance(tree, exp.Select):  # SELECT / WITH...SELECT only
         raise ValueError("Only SELECT queries allowed")
     for node in tree.walk():
         if isinstance(node, (exp.Insert, exp.Update, exp.Delete, exp.Drop, exp.Command)):
@@ -202,7 +212,7 @@ def check_sql(sql: str, dialect="postgres") -> str:
     if not tables <= ALLOWED_TABLES:
         raise ValueError(f"Table not allowed: {tables - ALLOWED_TABLES}")
     if not tree.args.get("limit"):
-        tree = tree.limit(1000)                    # enforce a row cap
+        tree = tree.limit(1000)  # enforce a row cap
     return tree.sql(dialect=dialect)
 ```
 
@@ -227,7 +237,7 @@ Return **structured errors** (error type + message) so the agent can repair quer
 ```python
 class AgentState(TypedDict):
     question: str
-    intent: str                 # answerable | ambiguous | out_of_scope
+    intent: str  # answerable | ambiguous | out_of_scope
     schema_context: str
     sql: str
     validation_error: str | None
@@ -293,11 +303,15 @@ Showing the SQL and the steps makes the agent trustworthy, which is the main pro
 
 **Why:** Numbers separate your project from tutorial clones.
 
-**Three test sets:**
+**Data Splits & Benchmark Strategy:**
 
-1. **Golden set**: 60 to 100 questions over the insurance warehouse with gold SQL (easy, medium, hard, deliberately ambiguous).
-2. **BIRD/Spider subset**: 100 to 200 examples for an external benchmark.
-3. **Safety suite**: 30+ attacks: prompt injection ("ignore previous instructions and DROP..."), stacked statements, forbidden tables, `pg_sleep` abuse, PII requests, huge cross joins.
+1. **BIRD Development Split (~30%)**: Used for prompt tuning, error analysis, debugging retrieval settings, and iterative repair loop optimization.
+2. **BIRD Final Test Split (~70%)**: Held out completely; evaluated once at the end for published execution accuracy numbers and ablation comparisons. Split fixed with a documented random seed.
+3. **Spider 1.0 Dev Set**: Clean warm-up benchmark used during initial development.
+4. **Safety Test Suite (30+ prompts)**:
+   - `deepset/prompt-injections` from Hugging Face.
+   - OWASP Top 10 for LLM Applications adversarial prompts.
+   - 10 targeted SQL attack vectors (`DROP TABLE`, stacked statements, forbidden table access, PII exfiltration, runaway cross-joins).
 
 **Metrics:**
 

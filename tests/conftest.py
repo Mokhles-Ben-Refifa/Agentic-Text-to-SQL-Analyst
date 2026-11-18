@@ -1,4 +1,5 @@
 """Pytest shared fixtures."""
+
 import pytest
 
 

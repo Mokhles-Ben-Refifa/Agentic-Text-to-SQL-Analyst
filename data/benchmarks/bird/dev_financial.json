@@ -1,0 +1,26 @@
+[
+  {
+    "question_id": 1,
+    "db_id": "financial",
+    "question": "What is the average loan amount for each loan status?",
+    "evidence": "loan status is in loan.status, amount is loan.amount",
+    "SQL": "SELECT status, AVG(amount) FROM loan GROUP BY status",
+    "difficulty": "simple"
+  },
+  {
+    "question_id": 2,
+    "db_id": "financial",
+    "question": "List all clients who have an active loan greater than 50000 in Prague.",
+    "evidence": "Prague district name is 'Hl.m. Praha', loan status 'A' or 'C'",
+    "SQL": "SELECT T1.client_id, T1.gender FROM client AS T1 INNER JOIN disp AS T2 ON T1.client_id = T2.client_id INNER JOIN loan AS T3 ON T2.account_id = T3.account_id INNER JOIN district AS T4 ON T1.district_id = T4.district_id WHERE T4.A2 = 'Hl.m. Praha' AND T3.amount > 50000",
+    "difficulty": "challenging"
+  },
+  {
+    "question_id": 3,
+    "db_id": "financial",
+    "question": "How many total accounts are there with monthly fees?",
+    "evidence": "frequency for monthly fee is 'POPLATEK MESICNE'",
+    "SQL": "SELECT COUNT(*) FROM account WHERE frequency = 'POPLATEK MESICNE'",
+    "difficulty": "simple"
+  }
+]
