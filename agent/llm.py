@@ -36,7 +36,9 @@ class MockStructuredChatModel:
                     category="out_of_scope",
                     refusal="I am a specialized SQL analyst and can only assist with querying database analytics.",
                 )
-            if any(k in user_text for k in ["check that", "is it good", "vague", "show me the good"]):
+            if any(
+                k in user_text for k in ["check that", "is it good", "vague", "show me the good"]
+            ):
                 return IntentClassification(
                     category="ambiguous",
                     clarification="Could you please specify which accounts, loans, or metrics you would like to analyze?",

@@ -32,27 +32,32 @@ class ForeignKeyExpander:
                             self.adj[target_table] = set()
                         self.adj[target_table].add(table_name)
 
-    def find_shortest_path(self, start: str, target: str) -> list[str]:
-        """Finds the shortest sequence of tables connecting start and target using BFS."""
+    def find_all_shortest_paths(self, start: str, target: str) -> list[list[str]]:
+        """Finds all shortest paths connecting start and target using BFS."""
         if start == target or start not in self.adj or target not in self.adj:
             return []
 
         queue = deque([[start]])
-        visited = {start}
+        shortest_paths: list[list[str]] = []
+        min_len: int | None = None
 
         while queue:
             path = queue.popleft()
-            node = path[-1]
+            if min_len is not None and len(path) > min_len:
+                break
 
+            node = path[-1]
             if node == target:
-                return path
+                if min_len is None:
+                    min_len = len(path)
+                shortest_paths.append(path)
+                continue
 
             for neighbor in self.adj.get(node, []):
-                if neighbor not in visited:
-                    visited.add(neighbor)
+                if neighbor not in path:
                     queue.append(path + [neighbor])
 
-        return []
+        return shortest_paths
 
     def expand_tables(self, seed_tables: list[str]) -> list[str]:
         """Expands a list of seed tables by adding all intermediate bridge tables required to join them."""
@@ -62,12 +67,12 @@ class ForeignKeyExpander:
 
         expanded_set = set(valid_seeds)
 
-        # For every pair in seed tables, connect them via shortest path
+        # For every pair in seed tables, connect them via all shortest paths
         for i in range(len(valid_seeds)):
             for j in range(i + 1, len(valid_seeds)):
                 u, v = valid_seeds[i], valid_seeds[j]
-                path = self.find_shortest_path(u, v)
-                if path:
+                paths = self.find_all_shortest_paths(u, v)
+                for path in paths:
                     expanded_set.update(path)
 
         # Maintain original order of seeds, followed by newly added bridge tables
