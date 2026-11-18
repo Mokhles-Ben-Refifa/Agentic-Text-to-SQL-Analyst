@@ -1,0 +1,33 @@
+name: district
+description: Demographic and economic characteristics of Czech districts.
+primary_keys:
+  - district_id
+domain_notes: >
+  Columns use cryptic identifiers common in warehouse legacy feeds:
+  A2 is the district name, A3 is region, A4 is population, and A11 is average salary.
+columns:
+  - name: district_id
+    type: INTEGER
+    primary_key: true
+    description: Unique identifier for each district.
+    sample_values: [1, 2, 3, 10]
+  - name: A2
+    type: TEXT
+    description: Name of the district municipality.
+    business_meaning: District name (e.g. Prague is 'Hl.m. Praha').
+    sample_values: ['Hl.m. Praha', 'Benesov', 'Beroun', 'Kladno', 'Pilsen']
+  - name: A3
+    type: TEXT
+    description: Geographic region name.
+    business_meaning: Region of the Czech Republic.
+    sample_values: ['Prague', 'Central Bohemia', 'South Bohemia', 'West Bohemia']
+  - name: A4
+    type: INTEGER
+    description: Number of inhabitants residing in the district.
+    business_meaning: District population.
+    sample_values: [1204953, 88884, 77014, 150000]
+  - name: A11
+    type: REAL
+    description: Average gross salary per resident in the district.
+    business_meaning: Average monthly salary in CZK.
+    sample_values: [12541.0, 8507.0, 8980.0, 10200.0]

@@ -1,0 +1,25 @@
+name: client
+description: Bank client biographical demographics and residence district.
+primary_keys:
+  - client_id
+domain_notes: >
+  Clients can hold relationships (as owner or authorized user) across multiple accounts via the disp table.
+columns:
+  - name: client_id
+    type: INTEGER
+    primary_key: true
+    description: Unique primary key for each client customer.
+    sample_values: [1, 2, 3, 500]
+  - name: gender
+    type: TEXT
+    description: Client gender ('M' for male, 'F' for female).
+    sample_values: ['M', 'F']
+  - name: birth_date
+    type: TEXT
+    description: Client date of birth in YYYY-MM-DD format.
+    sample_values: ['1970-12-13', '1945-08-14', '1968-10-09']
+  - name: district_id
+    type: INTEGER
+    description: District of client's residential address.
+    foreign_key: district.district_id
+    sample_values: [1, 2, 3, 15]

@@ -1,0 +1,170 @@
+# ==============================================================================
+# Verified Few-Shot Question to SQL Pairs for Dynamic Prompt Retrieval
+# ==============================================================================
+examples:
+  - question_id: 101
+    question: "What is the average loan amount for each loan status?"
+    evidence: "loan status is in loan.status, amount is loan.amount"
+    reasoning: "Group loans by status and compute the AVG of amount."
+    tables_used: ["loan"]
+    difficulty: "simple"
+    sql: "SELECT status, AVG(amount) AS avg_amount FROM loan GROUP BY status;"
+
+  - question_id: 102
+    question: "How many accounts have monthly statement issuance?"
+    evidence: "monthly statement frequency is 'POPLATEK MESICNE'"
+    reasoning: "Filter account table by frequency='POPLATEK MESICNE' and COUNT rows."
+    tables_used: ["account"]
+    difficulty: "simple"
+    sql: "SELECT COUNT(*) AS monthly_account_count FROM account WHERE frequency = 'POPLATEK MESICNE';"
+
+  - question_id: 103
+    question: "Which district has the highest average salary?"
+    evidence: "district name is A2, average salary is A11"
+    reasoning: "Sort districts by A11 descending and pick the top 1."
+    tables_used: ["district"]
+    difficulty: "simple"
+    sql: "SELECT A2 AS district_name, A11 AS avg_salary FROM district ORDER BY A11 DESC LIMIT 1;"
+
+  - question_id: 104
+    question: "List the top 5 largest loans and their duration in months."
+    evidence: "loan amount is loan.amount, duration is loan.duration"
+    reasoning: "Order loan table by amount descending, limit 5."
+    tables_used: ["loan"]
+    difficulty: "simple"
+    sql: "SELECT loan_id, amount, duration FROM loan ORDER BY amount DESC LIMIT 5;"
+
+  - question_id: 105
+    question: "What is the total amount of all active loans in good standing?"
+    evidence: "active loans in good standing have status = 'C'"
+    reasoning: "Sum loan amount where status='C'."
+    tables_used: ["loan"]
+    difficulty: "simple"
+    sql: "SELECT SUM(amount) AS total_active_loan_amount FROM loan WHERE status = 'C';"
+
+  - question_id: 106
+    question: "Count the number of male and female clients."
+    evidence: "gender is in client.gender ('M', 'F')"
+    reasoning: "Group by gender and count clients."
+    tables_used: ["client"]
+    difficulty: "simple"
+    sql: "SELECT gender, COUNT(*) AS client_count FROM client GROUP BY gender;"
+
+  - question_id: 107
+    question: "What is the total number of deposits vs withdrawals in transactions?"
+    evidence: "deposits have type = 'PRIJEM', withdrawals have type = 'VYDAJ'"
+    reasoning: "Group trans by type and count occurrences."
+    tables_used: ["trans"]
+    difficulty: "simple"
+    sql: "SELECT type, COUNT(*) AS trans_count, SUM(amount) AS total_amount FROM trans GROUP BY type;"
+
+  - question_id: 108
+    question: "Find all accounts opened in Prague with weekly statement fees."
+    evidence: "Prague is district.A2 = 'Hl.m. Praha', weekly fee is account.frequency = 'POPLATEK TYDNE'"
+    reasoning: "Join account to district on district_id, filter by Prague and weekly fee."
+    tables_used: ["account", "district"]
+    difficulty: "moderate"
+    sql: >
+      SELECT T1.account_id, T1.date, T2.A2 AS district_name
+      FROM account AS T1
+      INNER JOIN district AS T2 ON T1.district_id = T2.district_id
+      WHERE T2.A2 = 'Hl.m. Praha' AND T1.frequency = 'POPLATEK TYDNE';
+
+  - question_id: 109
+    question: "How many loans were granted to accounts located in each region?"
+    evidence: "region is district.A3, join loan -> account -> district"
+    reasoning: "Join loan to account on account_id, then to district on district_id. Group by region."
+    tables_used: ["loan", "account", "district"]
+    difficulty: "moderate"
+    sql: >
+      SELECT T3.A3 AS region, COUNT(T1.loan_id) AS loan_count, SUM(T1.amount) AS total_loan_volume
+      FROM loan AS T1
+      INNER JOIN account AS T2 ON T1.account_id = T2.account_id
+      INNER JOIN district AS T3 ON T2.district_id = T3.district_id
+      GROUP BY T3.A3
+      ORDER BY total_loan_volume DESC;
+
+  - question_id: 110
+    question: "What is the total defaulted loan amount by district name?"
+    evidence: "defaulted loan status is 'B', district name is district.A2"
+    reasoning: "Filter loan by status='B', join loan -> account -> district, group by district name."
+    tables_used: ["loan", "account", "district"]
+    difficulty: "moderate"
+    sql: >
+      SELECT T3.A2 AS district_name, SUM(T1.amount) AS defaulted_amount, COUNT(*) AS defaulted_count
+      FROM loan AS T1
+      INNER JOIN account AS T2 ON T1.account_id = T2.account_id
+      INNER JOIN district AS T3 ON T2.district_id = T3.district_id
+      WHERE T1.status = 'B'
+      GROUP BY T3.A2
+      ORDER BY defaulted_amount DESC;
+
+  - question_id: 111
+    question: "Find the client ID and birth date of account owners who hold loans greater than 100,000."
+    evidence: "account owners have disp.type = 'OWNER', join client -> disp -> loan"
+    reasoning: "Join client with disp, then loan with disp on account_id where type='OWNER' and amount > 100000."
+    tables_used: ["client", "disp", "loan"]
+    difficulty: "moderate"
+    sql: >
+      SELECT DISTINCT T1.client_id, T1.birth_date, T3.amount AS loan_amount
+      FROM client AS T1
+      INNER JOIN disp AS T2 ON T1.client_id = T2.client_id
+      INNER JOIN loan AS T3 ON T2.account_id = T3.account_id
+      WHERE T2.type = 'OWNER' AND T3.amount > 100000;
+
+  - question_id: 112
+    question: "List all transactions with a cash deposit exceeding 10,000 in account 1."
+    evidence: "cash deposit is trans.operation = 'VKLAD', deposit type is 'PRIJEM'"
+    reasoning: "Filter trans by account_id=1, operation='VKLAD', amount > 10000."
+    tables_used: ["trans"]
+    difficulty: "moderate"
+    sql: >
+      SELECT trans_id, date, amount, balance
+      FROM trans
+      WHERE account_id = 1 AND operation = 'VKLAD' AND amount > 10000
+      ORDER BY date ASC;
+
+  - question_id: 113
+    question: "Calculate the loan default rate for each loan duration."
+    evidence: "defaulted status is 'B', finished statuses are 'A' and 'B'"
+    reasoning: "Compute ratio of status='B' over count of status in ('A', 'B') grouped by duration."
+    tables_used: ["loan"]
+    difficulty: "challenging"
+    sql: >
+      SELECT duration,
+             COUNT(*) AS total_finished_loans,
+             SUM(CASE WHEN status = 'B' THEN 1 ELSE 0 END) AS defaulted_loans,
+             ROUND(CAST(SUM(CASE WHEN status = 'B' THEN 1 ELSE 0 END) AS REAL) * 100.0 / NULLIF(COUNT(*), 0), 2) AS default_rate_percentage
+      FROM loan
+      WHERE status IN ('A', 'B')
+      GROUP BY duration
+      ORDER BY duration ASC;
+
+  - question_id: 114
+    question: "Find clients who reside in Prague and own an active loan in good standing."
+    evidence: "Prague is district.A2 = 'Hl.m. Praha', active loan is loan.status = 'C', owner is disp.type = 'OWNER'"
+    reasoning: "Join client -> district, client -> disp -> loan, filter by district name, owner type, and status C."
+    tables_used: ["client", "district", "disp", "loan"]
+    difficulty: "challenging"
+    sql: >
+      SELECT T1.client_id, T1.gender, T4.amount AS loan_amount, T4.payments AS monthly_payment
+      FROM client AS T1
+      INNER JOIN district AS T2 ON T1.district_id = T2.district_id
+      INNER JOIN disp AS T3 ON T1.client_id = T3.client_id
+      INNER JOIN loan AS T4 ON T3.account_id = T4.account_id
+      WHERE T2.A2 = 'Hl.m. Praha' AND T3.type = 'OWNER' AND T4.status = 'C';
+
+  - question_id: 115
+    question: "Which accounts have a current balance lower than 500 and an active loan?"
+    evidence: "active loan status is 'C', current balance is the balance of the latest transaction"
+    reasoning: "Join loan with latest transaction balance on account_id, filter by status C and balance < 500."
+    tables_used: ["loan", "trans"]
+    difficulty: "challenging"
+    sql: >
+      SELECT T1.account_id, T1.amount AS loan_amount, T2.balance AS latest_balance
+      FROM loan AS T1
+      INNER JOIN (
+          SELECT account_id, balance, ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY date DESC, trans_id DESC) AS rn
+          FROM trans
+      ) AS T2 ON T1.account_id = T2.account_id AND T2.rn = 1
+      WHERE T1.status = 'C' AND T2.balance < 500;

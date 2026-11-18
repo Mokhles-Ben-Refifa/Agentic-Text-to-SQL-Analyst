@@ -1,0 +1,43 @@
+name: loan
+description: Granted loans, payment schedules, and historical credit repayment status.
+primary_keys:
+  - loan_id
+domain_notes: >
+  Loans are linked directly to accounts (not clients; join via disp with type='OWNER' to find client).
+  Status codes represent contract completion and default risk.
+columns:
+  - name: loan_id
+    type: INTEGER
+    primary_key: true
+    description: Unique identifier for each loan.
+    sample_values: [1, 2, 3, 50]
+  - name: account_id
+    type: INTEGER
+    description: Account associated with the loan credit.
+    foreign_key: account.account_id
+    sample_values: [1, 2, 3]
+  - name: date
+    type: TEXT
+    description: Date the loan was approved and funded (YYYY-MM-DD).
+    sample_values: ['1996-04-29', '1994-01-05', '1995-10-18']
+  - name: amount
+    type: INTEGER
+    description: Total initial loan principal amount.
+    sample_values: [80952, 30276, 120000, 250000]
+  - name: duration
+    type: INTEGER
+    description: Term duration of the loan in months.
+    sample_values: [12, 24, 36, 48, 60]
+  - name: payments
+    type: REAL
+    description: Monthly installment payment due.
+    sample_values: [3373.0, 2523.0, 1850.5]
+  - name: status
+    type: TEXT
+    description: Status of loan repayment and credit delinquency.
+    business_meaning: >
+      'A' = Finished contract, loan repaid without problems,
+      'B' = Finished contract, loan defaulted/unpaid,
+      'C' = Active/running contract, in good standing,
+      'D' = Active/running contract, delinquent / in debt / arrears.
+    sample_values: ['A', 'B', 'C', 'D']

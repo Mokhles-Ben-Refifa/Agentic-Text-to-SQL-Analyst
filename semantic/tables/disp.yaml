@@ -1,0 +1,30 @@
+name: disp
+description: Disposition table establishing access privileges between clients and accounts.
+primary_keys:
+  - disp_id
+domain_notes: >
+  Essential join bridge between client and account. Only 'OWNER' can apply for loans or request changes;
+  'DISPONENT' is an authorized signatory user.
+columns:
+  - name: disp_id
+    type: INTEGER
+    primary_key: true
+    description: Unique disposition record identifier.
+    sample_values: [1, 2, 3, 200]
+  - name: client_id
+    type: INTEGER
+    description: ID of client who holds privileges on the account.
+    foreign_key: client.client_id
+    sample_values: [1, 2, 3]
+  - name: account_id
+    type: INTEGER
+    description: Bank account ID.
+    foreign_key: account.account_id
+    sample_values: [1, 2, 3]
+  - name: type
+    type: TEXT
+    description: Disposition relationship type.
+    business_meaning: >
+      'OWNER' = Primary account owner with full legal rights,
+      'DISPONENT' = Secondary authorized user with transaction privileges.
+    sample_values: ['OWNER', 'DISPONENT']

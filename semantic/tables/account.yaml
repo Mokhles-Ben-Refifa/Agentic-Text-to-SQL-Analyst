@@ -1,0 +1,29 @@
+name: account
+description: Bank account records, statement frequency, and opening branch district.
+primary_keys:
+  - account_id
+domain_notes: >
+  Each account is assigned to a branch district and has a specific fee statement schedule.
+columns:
+  - name: account_id
+    type: INTEGER
+    primary_key: true
+    description: Unique primary key identifier for the bank account.
+    sample_values: [1, 2, 3, 100]
+  - name: district_id
+    type: INTEGER
+    description: Branch district where the account was registered.
+    foreign_key: district.district_id
+    sample_values: [1, 2, 5, 12]
+  - name: frequency
+    type: TEXT
+    description: Frequency of statement issuance and fee debiting.
+    business_meaning: >
+      'POPLATEK MESICNE' = Monthly statement issuance,
+      'POPLATEK TYDNE' = Weekly statement issuance,
+      'POPLATEK PO OBRATU' = Issuance after transaction.
+    sample_values: ['POPLATEK MESICNE', 'POPLATEK TYDNE', 'POPLATEK PO OBRATU']
+  - name: date
+    type: TEXT
+    description: Account opening date in YYYY-MM-DD format.
+    sample_values: ['1995-03-24', '1993-02-26', '1997-07-07']

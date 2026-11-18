@@ -1,0 +1,97 @@
+# ==============================================================================
+# Semantic Layer: Business Glossary & Terminology Definitions
+# ==============================================================================
+glossary:
+  - term: "Active Loan"
+    definition: "A loan with an active contract currently in good standing without overdue debt."
+    sql_expression: "loan.status = 'C'"
+    applicable_tables: ["loan"]
+    examples:
+      - "How many active loans do we have?"
+      - "What is the total balance of active loans?"
+
+  - term: "Defaulted Loan"
+    definition: "A terminated loan contract that was charged off / defaulted without full repayment."
+    sql_expression: "loan.status = 'B'"
+    applicable_tables: ["loan"]
+    examples:
+      - "List all defaulted loans last year."
+      - "Which district has the highest count of defaulted loans?"
+
+  - term: "Delinquent Loan"
+    definition: "An active/running loan contract currently in arrears or in default."
+    sql_expression: "loan.status = 'D'"
+    applicable_tables: ["loan"]
+    examples:
+      - "Show accounts with delinquent loans."
+      - "What is the delinquency rate by region?"
+
+  - term: "Finished Repaid Loan"
+    definition: "A completed loan contract that was successfully paid off in full."
+    sql_expression: "loan.status = 'A'"
+    applicable_tables: ["loan"]
+    examples:
+      - "How many loans were completed and fully repaid?"
+
+  - term: "Default Rate"
+    definition: "Proportion of defaulted loans over all finished loans (status A or B)."
+    sql_expression: "CAST(SUM(CASE WHEN loan.status = 'B' THEN 1 ELSE 0 END) AS REAL) / NULLIF(SUM(CASE WHEN loan.status IN ('A', 'B') THEN 1 ELSE 0 END), 0)"
+    applicable_tables: ["loan"]
+    examples:
+      - "Calculate the default rate by loan duration."
+
+  - term: "Account Owner"
+    definition: "The primary legal holder of the bank account, who has full authority."
+    sql_expression: "disp.type = 'OWNER'"
+    applicable_tables: ["disp"]
+    examples:
+      - "Count the distinct account owners in Prague."
+
+  - term: "Authorized User (Disponent)"
+    definition: "A secondary user authorized to make transactions but not take out loans."
+    sql_expression: "disp.type = 'DISPONENT'"
+    applicable_tables: ["disp"]
+    examples:
+      - "How many accounts have a disponent?"
+
+  - term: "Deposit / Inflow"
+    definition: "Incoming financial credit into an account."
+    sql_expression: "trans.type = 'PRIJEM'"
+    applicable_tables: ["trans"]
+    examples:
+      - "What was the total deposits sum last month?"
+
+  - term: "Withdrawal / Outflow"
+    definition: "Outgoing financial debit from an account."
+    sql_expression: "trans.type = 'VYDAJ'"
+    applicable_tables: ["trans"]
+    examples:
+      - "What is the average withdrawal amount?"
+
+  - term: "Prague District"
+    definition: "The capital city municipality Prague."
+    sql_expression: "district.A2 = 'Hl.m. Praha'"
+    applicable_tables: ["district"]
+    examples:
+      - "Find accounts opened in Prague."
+
+  - term: "District Name"
+    definition: "Name of the district municipality (legacy code A2)."
+    sql_expression: "district.A2"
+    applicable_tables: ["district"]
+    examples:
+      - "List accounts grouped by district name."
+
+  - term: "Average Salary"
+    definition: "District average gross monthly income in CZK (legacy code A11)."
+    sql_expression: "district.A11"
+    applicable_tables: ["district"]
+    examples:
+      - "Which district has the highest average salary?"
+
+  - term: "Monthly Statement Schedule"
+    definition: "Account charged and statements generated on a monthly basis."
+    sql_expression: "account.frequency = 'POPLATEK MESICNE'"
+    applicable_tables: ["account"]
+    examples:
+      - "Number of accounts with monthly statements."
