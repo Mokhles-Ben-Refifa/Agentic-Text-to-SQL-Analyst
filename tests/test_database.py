@@ -106,7 +106,7 @@ def test_sqlite_ddl_compilation():
 
 def test_database_settings_defaults():
     """Verify connection URL generation and default credentials."""
-    settings = DatabaseSettings()
+    settings = DatabaseSettings(db_dialect="postgres")
     assert "bird_warehouse" in settings.admin_database_url
     assert "admin" in settings.admin_database_url
     assert "readonly_agent" in settings.readonly_database_url

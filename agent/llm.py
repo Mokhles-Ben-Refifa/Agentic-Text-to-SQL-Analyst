@@ -2,12 +2,15 @@
 
 import os
 from typing import Any
+from dotenv import load_dotenv
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from pydantic import BaseModel
 
 from agent.state import FinalAnswer, IntentClassification, SQLGeneration, SQLRepair
+
+load_dotenv()
 
 
 class MockStructuredChatModel:
@@ -93,8 +96,19 @@ def get_llm(
     if force_mock:
         return MockStructuredChatModel()
 
+    gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     openai_key = os.getenv("OPENAI_API_KEY")
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+
+    if gemini_key and not gemini_key.startswith("your_"):
+        from langchain_google_genai import ChatGoogleGenerativeAI
+
+        target_model = model_name or os.getenv("DEFAULT_MODEL", "gemini-3.5-flash-lite")
+        return ChatGoogleGenerativeAI(
+            model=target_model,
+            google_api_key=gemini_key,
+            temperature=temperature,
+        )
 
     if openai_key and not openai_key.startswith("your_"):
         from langchain_openai import ChatOpenAI

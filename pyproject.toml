@@ -29,6 +29,7 @@ dependencies = [
     "sqlglot>=25.0.0",
     "streamlit>=1.35.0",
     "uvicorn>=0.30.0",
+    "langchain-google-genai>=4.5.1",
 ]
 
 [project.optional-dependencies]

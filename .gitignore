@@ -76,6 +76,9 @@ chroma_db/
 .chroma/
 data/generated/
 data/raw/
+data/benchmarks/bird/databases/
+data/benchmarks/bird/*.json
+data/benchmarks/bird/*.zip
 
 # Docker volumes / logs
 *.log
