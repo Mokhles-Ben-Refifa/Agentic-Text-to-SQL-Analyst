@@ -1,10 +1,15 @@
 name: district
-description: Demographic and economic characteristics of Czech districts.
+description: Demographic, socioeconomic, and criminal statistics of Czech districts and regions.
 primary_keys:
   - district_id
 domain_notes: >
   Columns use cryptic identifiers common in warehouse legacy feeds:
-  A2 is the district name, A3 is region, A4 is population, and A11 is average salary.
+  - A2: District municipality name (e.g., 'Hl.m. Praha', 'Benesov').
+  - A3: Broader geographic region (e.g., 'Prague', 'central Bohemia', 'east Bohemia', 'south Bohemia', 'north Bohemia', 'north Moravia', 'south Moravia', 'west Bohemia').
+  - A4: Number of inhabitants.
+  - A11: Average monthly gross salary in CZK.
+  - A15: Number of committed crimes in 1995 (crimes_1995).
+  - A16: Number of committed crimes in 1996 (crimes_1996).
 columns:
   - name: district_id
     type: INTEGER
@@ -19,15 +24,25 @@ columns:
   - name: A3
     type: TEXT
     description: Geographic region name.
-    business_meaning: Region of the Czech Republic.
-    sample_values: ['Prague', 'Central Bohemia', 'South Bohemia', 'West Bohemia']
+    business_meaning: Geographic region name (e.g. 'Prague', 'central Bohemia', 'east Bohemia').
+    sample_values: ['Prague', 'central Bohemia', 'south Bohemia', 'west Bohemia', 'north Bohemia', 'east Bohemia', 'south Moravia', 'north Moravia']
   - name: A4
     type: INTEGER
     description: Number of inhabitants residing in the district.
-    business_meaning: District population.
+    business_meaning: District population count.
     sample_values: [1204953, 88884, 77014, 150000]
   - name: A11
     type: REAL
     description: Average gross salary per resident in the district.
     business_meaning: Average monthly salary in CZK.
     sample_values: [12541.0, 8507.0, 8980.0, 10200.0]
+  - name: A15
+    type: INTEGER
+    description: Total committed crimes in 1995.
+    business_meaning: Number of committed crimes in the year 1995.
+    sample_values: [85677, 2159, 2854]
+  - name: A16
+    type: INTEGER
+    description: Total committed crimes in 1996.
+    business_meaning: Number of committed crimes in the year 1996. Pick A16 (not A15) for questions about 1996 crimes.
+    sample_values: [99107, 2674, 3159]

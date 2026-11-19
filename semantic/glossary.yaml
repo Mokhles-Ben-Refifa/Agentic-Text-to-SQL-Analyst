@@ -3,70 +3,37 @@
 # ==============================================================================
 glossary:
   - term: "Active Loan"
-    definition: "A loan with an active contract currently in good standing without overdue debt."
+    definition: "A loan with an active running contract currently in good standing without overdue debt."
     sql_expression: "loan.status = 'C'"
     applicable_tables: ["loan"]
     examples:
       - "How many active loans do we have?"
       - "What is the total balance of active loans?"
 
-  - term: "Defaulted Loan"
-    definition: "A terminated loan contract that was charged off / defaulted without full repayment."
-    sql_expression: "loan.status = 'B'"
-    applicable_tables: ["loan"]
-    examples:
-      - "List all defaulted loans last year."
-      - "Which district has the highest count of defaulted loans?"
-
-  - term: "Delinquent Loan"
-    definition: "An active/running loan contract currently in arrears or in default."
+  - term: "Loans Currently in Debt"
+    definition: "An active running loan contract where the client is currently in arrears, delinquent, or in debt."
     sql_expression: "loan.status = 'D'"
     applicable_tables: ["loan"]
     examples:
-      - "Show accounts with delinquent loans."
-      - "What is the delinquency rate by region?"
+      - "How many loans are currently in debt?"
+      - "Total loan amount per region for loans in debt."
+      - "Which clients own an account that has a running loan in debt?"
 
-  - term: "Finished Repaid Loan"
-    definition: "A completed loan contract that was successfully paid off in full."
+  - term: "Finished Repaid Loan (Finished without Problems)"
+    definition: "A completed and closed loan contract that was successfully repaid in full without problems or default."
     sql_expression: "loan.status = 'A'"
     applicable_tables: ["loan"]
     examples:
       - "How many loans were completed and fully repaid?"
+      - "What percentage of loans were finished without problems?"
 
-  - term: "Default Rate"
-    definition: "Proportion of defaulted loans over all finished loans (status A or B)."
-    sql_expression: "CAST(SUM(CASE WHEN loan.status = 'B' THEN 1 ELSE 0 END) AS REAL) / NULLIF(SUM(CASE WHEN loan.status IN ('A', 'B') THEN 1 ELSE 0 END), 0)"
+  - term: "Defaulted Loan"
+    definition: "A terminated / finished loan contract that ended with unpaid debt / default."
+    sql_expression: "loan.status = 'B'"
     applicable_tables: ["loan"]
     examples:
-      - "Calculate the default rate by loan duration."
-
-  - term: "Account Owner"
-    definition: "The primary legal holder of the bank account, who has full authority."
-    sql_expression: "disp.type = 'OWNER'"
-    applicable_tables: ["disp"]
-    examples:
-      - "Count the distinct account owners in Prague."
-
-  - term: "Authorized User (Disponent)"
-    definition: "A secondary user authorized to make transactions but not take out loans."
-    sql_expression: "disp.type = 'DISPONENT'"
-    applicable_tables: ["disp"]
-    examples:
-      - "How many accounts have a disponent?"
-
-  - term: "Deposit / Inflow"
-    definition: "Incoming financial credit into an account."
-    sql_expression: "trans.type = 'PRIJEM'"
-    applicable_tables: ["trans"]
-    examples:
-      - "What was the total deposits sum last month?"
-
-  - term: "Withdrawal / Outflow"
-    definition: "Outgoing financial debit from an account."
-    sql_expression: "trans.type = 'VYDAJ'"
-    applicable_tables: ["trans"]
-    examples:
-      - "What is the average withdrawal amount?"
+      - "List all defaulted loans."
+      - "What is the total defaulted loan amount by district name?"
 
   - term: "Prague District"
     definition: "The capital city municipality Prague."
@@ -75,23 +42,103 @@ glossary:
     examples:
       - "Find accounts opened in Prague."
 
-  - term: "District Name"
-    definition: "Name of the district municipality (legacy code A2)."
-    sql_expression: "district.A2"
-    applicable_tables: ["district"]
+  - term: "Default Rate"
+    definition: "Proportion of defaulted loans over all finished loans (status A or B)."
+    sql_expression: "CAST(SUM(CASE WHEN loan.status = 'B' THEN 1 ELSE 0 END) AS REAL) / NULLIF(SUM(CASE WHEN loan.status IN ('A', 'B') THEN 1 ELSE 0 END), 0)"
+    applicable_tables: ["loan"]
     examples:
-      - "List accounts grouped by district name."
+      - "Calculate the default rate by loan duration."
 
-  - term: "Average Salary"
-    definition: "District average gross monthly income in CZK (legacy code A11)."
-    sql_expression: "district.A11"
-    applicable_tables: ["district"]
+  - term: "Weekly Statement Schedule"
+    definition: "Accounts billed and receiving bank statements on a weekly schedule (frequency code 'POPLATEK TYDNE')."
+    sql_expression: "account.frequency = 'POPLATEK TYDNE'"
+    applicable_tables: ["account"]
     examples:
-      - "Which district has the highest average salary?"
+      - "How many accounts get weekly statements?"
 
   - term: "Monthly Statement Schedule"
-    definition: "Account charged and statements generated on a monthly basis."
+    definition: "Accounts billed and receiving bank statements on a monthly schedule (frequency code 'POPLATEK MESICNE')."
     sql_expression: "account.frequency = 'POPLATEK MESICNE'"
     applicable_tables: ["account"]
     examples:
       - "Number of accounts with monthly statements."
+
+  - term: "Issuance After Transaction Schedule"
+    definition: "Accounts receiving statements after each transaction (frequency code 'POPLATEK PO OBRATU')."
+    sql_expression: "account.frequency = 'POPLATEK PO OBRATU'"
+    applicable_tables: ["account"]
+    examples:
+      - "Accounts with statements after transaction."
+
+  - term: "District Name"
+    definition: "Name of the district municipality (legacy column A2)."
+    sql_expression: "district.A2"
+    applicable_tables: ["district"]
+    examples:
+      - "Which district had the most crimes in 1996?"
+
+  - term: "Region"
+    definition: "Broader geographic region containing multiple districts (legacy column A3)."
+    sql_expression: "district.A3"
+    applicable_tables: ["district"]
+    examples:
+      - "Which region has the highest average salary?"
+      - "Total loan amount per region for loans in debt."
+
+  - term: "Average Salary"
+    definition: "District average gross monthly income in CZK (legacy column A11)."
+    sql_expression: "district.A11"
+    applicable_tables: ["district"]
+    examples:
+      - "Which region has the highest average salary?"
+
+  - term: "1996 Committed Crimes"
+    definition: "Total number of committed crimes in the district during the year 1996 (legacy column A16, not A15)."
+    sql_expression: "district.A16"
+    applicable_tables: ["district"]
+    examples:
+      - "Which district had the most crimes in 1996?"
+      - "District with the highest 1996 crime count."
+
+  - term: "1995 Committed Crimes"
+    definition: "Total number of committed crimes in the district during the year 1995 (legacy column A15)."
+    sql_expression: "district.A15"
+    applicable_tables: ["district"]
+    examples:
+      - "Which district had the most crimes in 1995?"
+
+  - term: "Account Owner (Avoid Double Counting)"
+    definition: "The primary legal owner of the account. To avoid duplicate counting when joining clients with accounts or loans, always filter disp.type = 'OWNER'."
+    sql_expression: "disp.type = 'OWNER'"
+    applicable_tables: ["disp"]
+    examples:
+      - "How many distinct clients have a loan?"
+      - "Which clients own an account that has a running loan in debt?"
+
+  - term: "Gold Card"
+    definition: "Premium gold-tier payment card issued to a disposition."
+    sql_expression: "card.type = 'gold'"
+    applicable_tables: ["card"]
+    examples:
+      - "List the gender and birth date of clients who own a gold card."
+
+  - term: "Withdrawal / Outflow"
+    definition: "Outgoing funds debit from an account (type 'VYDAJ' or 'VYBER')."
+    sql_expression: "trans.type IN ('VYBER', 'VYDAJ')"
+    applicable_tables: ["trans"]
+    examples:
+      - "Monthly total of withdrawals in 1997."
+
+  - term: "Deposit / Inflow"
+    definition: "Incoming financial credit into an account (type 'PRIJEM')."
+    sql_expression: "trans.type = 'PRIJEM'"
+    applicable_tables: ["trans"]
+    examples:
+      - "What was the total deposits sum last month?"
+
+  - term: "Date Arithmetic (Days Between Dates)"
+    definition: "Difference in days between two date columns in SQLite using julianday."
+    sql_expression: "julianday(date_2) - julianday(date_1)"
+    applicable_tables: ["account", "loan", "trans"]
+    examples:
+      - "Average days between account opening and loan date for loans in debt."

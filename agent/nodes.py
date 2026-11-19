@@ -278,11 +278,14 @@ def answer_node(state: AgentState) -> dict[str, Any]:
         return {"answer": answer, "suggested_chart": "none"}
 
     system_prompt = load_prompt("answer")
+    schema_context = state.get("retrieved_schema", "")
     user_prompt = (
-        f"Question: {question}\n\n"
-        f"Executed SQL: {sql}\n\n"
-        f"Returned Rows (sample): {data[:10]}\n"
-        f"Total Row Count: {len(data)}"
+        f"=== DOMAIN GLOSSARY & SCHEMA MEANINGS ===\n{schema_context}\n\n"
+        f"=== USER BUSINESS QUESTION ===\n{question}\n\n"
+        f"=== EXECUTED SQL ===\n{sql}\n\n"
+        f"=== QUERY RESULTS ===\n"
+        f"Total Row Count: {len(data)}\n"
+        f"Sample Rows (up to 10): {data[:10]}\n"
     )
 
     llm = get_llm()

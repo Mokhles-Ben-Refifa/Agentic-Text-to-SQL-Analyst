@@ -168,3 +168,187 @@ examples:
           FROM trans
       ) AS T2 ON T1.account_id = T2.account_id AND T2.rn = 1
       WHERE T1.status = 'C' AND T2.balance < 500;
+
+  - question_id: 116
+    question: "How many loans are currently in debt?"
+    evidence: "loans currently in debt have running contract in debt: loan.status = 'D'"
+    reasoning: "Filter loan table by status = 'D' and count."
+    tables_used: ["loan"]
+    difficulty: "simple"
+    sql: "SELECT COUNT(*) AS loans_in_debt_count FROM loan WHERE status = 'D';"
+
+  - question_id: 117
+    question: "What percentage of loans were finished without problems?"
+    evidence: "loans finished without problems have status = 'A'"
+    reasoning: "Compute ratio of status='A' over total loan count multiplied by 100."
+    tables_used: ["loan"]
+    difficulty: "simple"
+    sql: "SELECT ROUND(CAST(SUM(CASE WHEN status = 'A' THEN 1 ELSE 0 END) AS REAL) * 100.0 / NULLIF(COUNT(*), 0), 2) AS pct_finished_without_problems FROM loan;"
+
+  - question_id: 118
+    question: "How many accounts get weekly statements?"
+    evidence: "weekly statements correspond to account.frequency = 'POPLATEK TYDNE'"
+    reasoning: "Filter account by frequency = 'POPLATEK TYDNE' and count rows."
+    tables_used: ["account"]
+    difficulty: "simple"
+    sql: "SELECT COUNT(*) AS weekly_statement_accounts FROM account WHERE frequency = 'POPLATEK TYDNE';"
+
+  - question_id: 119
+    question: "Which region has the highest average salary?"
+    evidence: "region is district.A3, average salary is district.A11"
+    reasoning: "Group by district.A3, calculate AVG of A11, order by avg descending limit 1."
+    tables_used: ["district"]
+    difficulty: "simple"
+    sql: "SELECT A3 AS region, AVG(A11) AS avg_salary FROM district GROUP BY A3 ORDER BY avg_salary DESC LIMIT 1;"
+
+  - question_id: 120
+    question: "Which district had the most crimes in 1996?"
+    evidence: "district name is district.A2, 1996 crimes is district.A16 (not A15)"
+    reasoning: "Sort by A16 descending, select A2 and limit 1."
+    tables_used: ["district"]
+    difficulty: "simple"
+    sql: "SELECT A2 AS district_name, A16 AS crimes_1996 FROM district ORDER BY A16 DESC LIMIT 1;"
+
+  - question_id: 121
+    question: "How many male clients live in the district with the highest 1996 crime count?"
+    evidence: "male is client.gender = 'M', district with max crimes in 1996 is subquery on district.A16"
+    reasoning: "Filter client by gender='M' and district_id equal to top district ordered by A16 desc."
+    tables_used: ["client", "district"]
+    difficulty: "moderate"
+    sql: >
+      SELECT COUNT(*) AS male_client_count
+      FROM client
+      WHERE gender = 'M' AND district_id = (
+          SELECT district_id FROM district ORDER BY A16 DESC LIMIT 1
+      );
+
+  - question_id: 122
+    question: "List the gender and birth date of clients who own a gold card."
+    evidence: "gold card is card.type = 'gold', join client -> disp -> card"
+    reasoning: "Join client with disp on client_id, and card with disp on disp_id, filter by card.type='gold'."
+    tables_used: ["client", "disp", "card"]
+    difficulty: "moderate"
+    sql: >
+      SELECT DISTINCT T1.gender, T1.birth_date
+      FROM client AS T1
+      INNER JOIN disp AS T2 ON T1.client_id = T2.client_id
+      INNER JOIN card AS T3 ON T2.disp_id = T3.disp_id
+      WHERE T3.type = 'gold';
+
+  - question_id: 123
+    question: "Which clients own an account that has a running loan in debt?"
+    evidence: "running loan in debt is loan.status = 'D', account owner is disp.type = 'OWNER'"
+    reasoning: "Join client -> disp -> loan, filter disp.type='OWNER' and loan.status='D'."
+    tables_used: ["client", "disp", "loan"]
+    difficulty: "moderate"
+    sql: >
+      SELECT DISTINCT T1.client_id
+      FROM client AS T1
+      INNER JOIN disp AS T2 ON T1.client_id = T2.client_id
+      INNER JOIN loan AS T3 ON T2.account_id = T3.account_id
+      WHERE T2.type = 'OWNER' AND T3.status = 'D';
+
+  - question_id: 124
+    question: "How many distinct clients have a loan?"
+    evidence: "to avoid double-counting authorized users, filter disp.type = 'OWNER' or use COUNT(DISTINCT)"
+    reasoning: "Join client -> disp -> loan, count distinct client_id with disp.type='OWNER'."
+    tables_used: ["client", "disp", "loan"]
+    difficulty: "moderate"
+    sql: >
+      SELECT COUNT(DISTINCT T1.client_id) AS distinct_borrower_count
+      FROM client AS T1
+      INNER JOIN disp AS T2 ON T1.client_id = T2.client_id
+      INNER JOIN loan AS T3 ON T2.account_id = T3.account_id
+      WHERE T2.type = 'OWNER';
+
+  - question_id: 125
+    question: "Total loan amount per district, with the number of transactions in the same result."
+    evidence: "CRITICAL: Do NOT join loan and trans directly together to avoid Cartesian fan-out and inflated sums. Use separate CTEs or subqueries per district."
+    reasoning: "Compute district_loans and district_trans separately in CTEs, then join to district."
+    tables_used: ["district", "loan", "trans", "account"]
+    difficulty: "challenging"
+    sql: >
+      WITH district_loans AS (
+          SELECT T2.district_id, SUM(T1.amount) AS total_loan_amount
+          FROM loan AS T1
+          INNER JOIN account AS T2 ON T1.account_id = T2.account_id
+          GROUP BY T2.district_id
+      ),
+      district_trans AS (
+          SELECT T2.district_id, COUNT(T1.trans_id) AS total_trans_count
+          FROM trans AS T1
+          INNER JOIN account AS T2 ON T1.account_id = T2.account_id
+          GROUP BY T2.district_id
+      )
+      SELECT T1.district_id, T1.A2 AS district_name,
+             COALESCE(T2.total_loan_amount, 0) AS total_loan_amount,
+             COALESCE(T3.total_trans_count, 0) AS total_trans_count
+      FROM district AS T1
+      LEFT JOIN district_loans AS T2 ON T1.district_id = T2.district_id
+      LEFT JOIN district_trans AS T3 ON T1.district_id = T3.district_id
+      ORDER BY total_loan_amount DESC;
+
+  - question_id: 126
+    question: "How many accounts were opened in 1995?"
+    evidence: "account opening date is account.date in 'YYYY-MM-DD' format"
+    reasoning: "Filter account where strftime('%Y', date) = '1995' or date LIKE '1995-%'."
+    tables_used: ["account"]
+    difficulty: "simple"
+    sql: "SELECT COUNT(*) AS accounts_opened_1995 FROM account WHERE strftime('%Y', date) = '1995';"
+
+  - question_id: 127
+    question: "Monthly total of withdrawals in 1997."
+    evidence: "withdrawals have trans.type IN ('VYBER', 'VYDAJ'), date year is 1997, month is strftime('%m', date)"
+    reasoning: "Filter by year 1997 and withdrawal types, group by month."
+    tables_used: ["trans"]
+    difficulty: "moderate"
+    sql: >
+      SELECT strftime('%m', date) AS month, SUM(amount) AS total_withdrawals
+      FROM trans
+      WHERE strftime('%Y', date) = '1997' AND type IN ('VYBER', 'VYDAJ')
+      GROUP BY strftime('%m', date)
+      ORDER BY month ASC;
+
+  - question_id: 128
+    question: "Average days between account opening and loan date for loans in debt."
+    evidence: "SQLite date difference uses julianday(loan.date) - julianday(account.date), debt is loan.status = 'D'"
+    reasoning: "Join loan and account, calculate AVG of date difference for status='D'."
+    tables_used: ["loan", "account"]
+    difficulty: "moderate"
+    sql: >
+      SELECT AVG(julianday(T1.date) - julianday(T2.date)) AS avg_days_to_debt_loan
+      FROM loan AS T1
+      INNER JOIN account AS T2 ON T1.account_id = T2.account_id
+      WHERE T1.status = 'D';
+
+  - question_id: 129
+    question: "Top 3 districts by average loan amount, with their rank."
+    evidence: "rank window function is RANK() OVER (ORDER BY AVG(amount) DESC)"
+    reasoning: "Join loan -> account -> district, compute AVG amount and RANK() window function, limit 3."
+    tables_used: ["loan", "account", "district"]
+    difficulty: "moderate"
+    sql: >
+      SELECT T3.A2 AS district_name,
+             ROUND(AVG(T1.amount), 2) AS avg_loan_amount,
+             RANK() OVER (ORDER BY AVG(T1.amount) DESC) AS rank
+      FROM loan AS T1
+      INNER JOIN account AS T2 ON T1.account_id = T2.account_id
+      INNER JOIN district AS T3 ON T2.district_id = T3.district_id
+      GROUP BY T3.district_id, T3.A2
+      ORDER BY avg_loan_amount DESC
+      LIMIT 3;
+
+  - question_id: 130
+    question: "Clients who were over 50 when they took their loan."
+    evidence: "client age at event is (julianday(loan.date) - julianday(client.birth_date)) / 365.25"
+    reasoning: "Join client -> disp -> loan, filter disp.type='OWNER' and age at loan >= 50."
+    tables_used: ["client", "disp", "loan"]
+    difficulty: "challenging"
+    sql: >
+      SELECT DISTINCT T1.client_id, T1.birth_date, T3.date AS loan_date,
+             CAST((julianday(T3.date) - julianday(T1.birth_date)) / 365.25 AS INT) AS age_at_loan
+      FROM client AS T1
+      INNER JOIN disp AS T2 ON T1.client_id = T2.client_id
+      INNER JOIN loan AS T3 ON T2.account_id = T3.account_id
+      WHERE T2.type = 'OWNER'
+        AND ((julianday(T3.date) - julianday(T1.birth_date)) / 365.25) >= 50;

@@ -4,6 +4,8 @@ primary_keys:
   - client_id
 domain_notes: >
   Clients can hold relationships (as owner or authorized user) across multiple accounts via the disp table.
+  IMPORTANT: Client names are NOT stored in this database for privacy and GDPR anonymization;
+  only client_id, gender, birth_date, and district_id exist.
 columns:
   - name: client_id
     type: INTEGER

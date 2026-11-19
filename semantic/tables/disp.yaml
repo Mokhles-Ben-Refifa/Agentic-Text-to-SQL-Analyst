@@ -3,8 +3,11 @@ description: Disposition table establishing access privileges between clients an
 primary_keys:
   - disp_id
 domain_notes: >
-  Essential join bridge between client and account. Only 'OWNER' can apply for loans or request changes;
-  'DISPONENT' is an authorized signatory user.
+  Essential join bridge between client and account, and between disp and card.
+  'OWNER' is the primary account owner; 'DISPONENT' is an authorized signatory user.
+  CRITICAL: To avoid double-counting traps when joining clients to accounts or loans,
+  ALWAYS filter `disp.type = 'OWNER'` or use `DISTINCT client_id`, because accounts with a disponent
+  have multiple records in this table.
 columns:
   - name: disp_id
     type: INTEGER

@@ -5,13 +5,38 @@ Your task is to write a single SELECT query that answers the user's question, st
 === STRICT OPERATIONAL RULES ===
 1. READ-ONLY: Output ONLY a single SELECT query. Never use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, or commands.
 2. SCHEMA ADHERENCE: Use ONLY the tables and columns present in the provided schema context. NEVER hallucinate tables or columns.
-3. GLOSSARY METRICS: Strictly adhere to the business formulas and status codes in the Business Glossary (e.g., active loan is status = 'C', default loan is status = 'B', Prague is A2 = 'Hl.m. Praha').
-4. NO SELECT *: Never use 'SELECT *'. Explicitly select only the relevant columns needed to answer the question.
-5. JOIN INTEGRITY: Join tables only along verified foreign key paths. If bridging tables (e.g. 'disp') are present, include them in the join path.
-6. DIALECT COMPLIANCE: Write clean SQL compatible with the target dialect ({dialect}).
+3. GLOSSARY METRICS & CODES:
+   - Loan Status Codes in 'loan':
+     * 'A' = Contract finished, loan repaid without problems.
+     * 'B' = Contract finished, loan unpaid / defaulted.
+     * 'C' = Active/running contract, in good standing.
+     * 'D' = Active/running contract, delinquent / currently in debt / arrears. (For "currently in debt", use status = 'D').
+   - Account Frequency in 'account':
+     * 'POPLATEK TYDNE' = Weekly statement issuance.
+     * 'POPLATEK MESICNE' = Monthly statement issuance.
+     * 'POPLATEK PO OBRATU' = Statement issuance after transaction.
+   - District Codes in 'district':
+     * A2 = District municipality name (e.g. 'Hl.m. Praha', 'Benesov').
+     * A3 = Geographic region name (e.g. 'Prague', 'central Bohemia', 'east Bohemia'). (For "region", use A3).
+     * A11 = Average gross salary in CZK.
+     * A15 = Number of committed crimes in 1995.
+     * A16 = Number of committed crimes in 1996. (For 1996 crimes, ALWAYS pick A16, never A15).
+   - Payment Card in 'card':
+     * Links to client via 'disp': join card -> disp on disp_id, then disp -> client on client_id.
+     * Card tier is in card.type: 'classic', 'junior', 'gold'.
+4. DOUBLE-COUNTING TRAPS (CRITICAL):
+   - Client & Disp Fan-out: An account can have both an 'OWNER' and an authorized 'DISPONENT'. When counting or listing clients with an account or loan, ALWAYS filter `disp.type = 'OWNER'` or use `COUNT(DISTINCT client_id)` to prevent counting the same account twice.
+   - 1-to-Many Join Fan-out: NEVER join two many-side tables together directly (e.g. joining 'loan' and 'trans' directly multiplies row counts and inflates sums). Instead, aggregate each table separately in a Common Table Expression (CTE) or subquery before joining.
+5. DATES & TIME ARITHMETIC ({dialect}):
+   - Year filtering: `strftime('%Y', date) = '1995'` or `date LIKE '1995-%'`.
+   - Month grouping: `strftime('%m', date)` or `strftime('%Y-%m', date)`.
+   - Days difference between two dates: `julianday(date_2) - julianday(date_1)`.
+   - Age calculation at event time: `(julianday(event_date) - julianday(birth_date)) / 365.25`.
+6. SQL SYNTAX & RESERVED WORDS:
+   - Quote table `order` as `"order"` or `[order]` to avoid syntax keyword conflicts.
+   - Never use 'SELECT *'. Explicitly select only the relevant columns.
 7. REASONING PLAN: Provide a concise step-by-step reasoning plan identifying:
-   - Target tables
-   - Required join conditions
+   - Target tables and verified join path
    - Filter criteria (WHERE/HAVING)
-   - Aggregations and groupings
+   - Aggregations, groupings, or window functions
 8. STRUCTURED OUTPUT: Return your answer containing both the 'reasoning' and the clean 'sql'.

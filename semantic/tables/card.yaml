@@ -1,0 +1,31 @@
+name: card
+description: Credit and debit payment cards issued to account holders or authorized disponents.
+primary_keys:
+  - card_id
+domain_notes: >
+  Cards are issued to dispositions (disp_id), not directly to accounts or clients.
+  To find the cardholder, join card -> disp -> client.
+  Card types are 'classic', 'junior', and 'gold'.
+columns:
+  - name: card_id
+    type: INTEGER
+    primary_key: true
+    description: Unique identifier for each issued credit/debit card.
+    sample_values: [1, 2, 3, 100]
+  - name: disp_id
+    type: INTEGER
+    description: Disposition record linking the card to an account and a client.
+    foreign_key: disp.disp_id
+    sample_values: [1, 2, 3]
+  - name: type
+    type: TEXT
+    description: Tier or category of the payment card ('classic', 'junior', 'gold').
+    business_meaning: >
+      'gold' = Premium gold credit card,
+      'classic' = Standard consumer card,
+      'junior' = Youth / student card.
+    sample_values: ['classic', 'junior', 'gold']
+  - name: issued
+    type: TEXT
+    description: Date the card was issued (YYYY-MM-DD).
+    sample_values: ['1998-10-16', '1995-09-03', '1995-04-24']
