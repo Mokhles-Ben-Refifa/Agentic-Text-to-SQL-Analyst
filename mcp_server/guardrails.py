@@ -226,3 +226,13 @@ class SQLGuardrailEngine:
 
 
 guardrail_engine = SQLGuardrailEngine()
+
+
+def validate_sql_ast(
+    sql: str,
+    dialect: str = "postgres",
+    allowed_tables: list[str] | set[str] | None = None,
+) -> ValidationResult:
+    """Convenience helper to validate SQL statements via default guardrail engine."""
+    return guardrail_engine.validate_and_sanitize(sql=sql, dialect=dialect, allowed_tables=allowed_tables)
+

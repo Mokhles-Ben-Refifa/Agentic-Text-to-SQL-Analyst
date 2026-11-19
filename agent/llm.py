@@ -93,7 +93,7 @@ def get_llm(
     force_mock: bool = False,
 ) -> BaseChatModel | MockStructuredChatModel:
     """Returns a configured LangChain chat model or mock model."""
-    if force_mock:
+    if force_mock or os.getenv("FORCE_MOCK_LLM", "").lower() in ["true", "1", "yes"]:
         return MockStructuredChatModel()
 
     gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")

@@ -1,0 +1,32 @@
+name: CI Quality & Safety Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run Test Suite (MCP Guardrails, Schema RAG, Agent Graph, API)
+        run: uv run pytest -v
+
+      - name: Run Safety Benchmark Suite (100% Block Rate Gate)
+        run: uv run python eval/safety.py

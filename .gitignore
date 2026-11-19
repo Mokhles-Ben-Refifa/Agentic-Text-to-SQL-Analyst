@@ -79,6 +79,8 @@ data/raw/
 data/benchmarks/bird/databases/
 data/benchmarks/bird/*.json
 data/benchmarks/bird/*.zip
+data/benchmarks/bird/splits/
+eval/reports/*.json
 
 # Docker volumes / logs
 *.log
